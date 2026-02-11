@@ -64,9 +64,12 @@ impl RacineNode {
     // Afficher tous les dérivés de cette racine
     pub fn afficher_derives(&self) {
         let r: String = self.racine.iter().collect();
-        println!("Racine: {} ({} dérivés)", r, self.frequence);
+        let r_display: String = r.chars().rev().collect();
+        println!("Racine: {} ({} dérivés)", r_display, self.frequence);
         for d in &self.derives {
-            println!("  - {} (schème: {})", d.mot, d.schema);
+            let mot_display: String = d.mot.chars().rev().collect();
+            let schema_display: String = d.schema.chars().rev().collect();
+            println!("  - {} (schème: {})", mot_display, schema_display);
         }
     }
 
@@ -80,10 +83,11 @@ impl RacineNode {
 
         // 2) Ensuite, afficher le nœud courant
         let r: String = self.racine.iter().collect();
+        let r_display: String = r.chars().rev().collect();
         if self.frequence > 0 {
-            println!("  {} ({} dérivés)", r, self.frequence);
+            println!("  {} ({} dérivés)", r_display, self.frequence);
         } else {
-            println!("  {}", r);
+            println!("  {}", r_display);
         }
 
         // 3) Enfin, afficher tout le sous-arbre droit
@@ -223,7 +227,8 @@ impl Tree {
                 self.insert(racine); // insérer dans l'arbre (les doublons sont ignorés)
                 compteur = compteur + 1;
             } else {
-                println!("Ligne ignorée (pas 3 caractères): '{}'", ligne);
+                let ligne_display: String = ligne.chars().rev().collect();
+                println!("Ligne ignorée (pas 3 caractères): '{}'", ligne_display);
             }
         }
 

@@ -6,9 +6,20 @@ pub struct Scheme {
     pub description: String,
 }
 
+// État d'une case dans la table de hachage :
+//   Empty    → jamais utilisée (arrête la recherche)
+//   Deleted  → supprimée (tombstone : la recherche continue)
+//   Occupied → contient un schème valide
+#[derive(Clone)]
+enum Slot {
+    Empty,
+    Deleted,
+    Occupied(String, Scheme),
+}
+
 // Table de hachage simplifiée avec double hashing
 pub struct SchemeTable {
-    table: Vec<Option<(String, Scheme)>>,
+    table: Vec<Slot>,
     size: usize,
 }
 
@@ -16,7 +27,7 @@ impl SchemeTable {
     // Créer une table de taille fixe
     pub fn new(size: usize) -> Self {
         SchemeTable {
-            table: vec![None; size],
+            table: vec![Slot::Empty; size],
             size,
         }
     }
@@ -44,18 +55,27 @@ impl SchemeTable {
     pub fn insert(&mut self, key: String, scheme: Scheme) {
         let mut index = self.hash1(&key);
         let step = self.hash2(&key);
+        let mut first_deleted: Option<usize> = None; // retenir le 1er tombstone
 
         // Chercher une case libre (maximum size fois)
         for _ in 0..self.size {
             match &self.table[index] {
-                None => {
-                    // Case vide : insérer ici
-                    self.table[index] = Some((key, scheme));
+                Slot::Empty => {
+                    // Case vide : insérer au tombstone si trouvé, sinon ici
+                    let pos = first_deleted.unwrap_or(index);
+                    self.table[pos] = Slot::Occupied(key, scheme);
                     return;
                 }
-                Some((existing_key, _)) if existing_key == &key => {
+                Slot::Deleted => {
+                    // Retenir la première case supprimée (réutilisable)
+                    if first_deleted.is_none() {
+                        first_deleted = Some(index);
+                    }
+                    index = (index + step) % self.size;
+                }
+                Slot::Occupied(existing_key, _) if existing_key == &key => {
                     // Clé existe déjà : mettre à jour
-                    self.table[index] = Some((key, scheme));
+                    self.table[index] = Slot::Occupied(key, scheme);
                     return;
                 }
                 _ => {
@@ -63,6 +83,12 @@ impl SchemeTable {
                     index = (index + step) % self.size;
                 }
             }
+        }
+
+        // Si on a trouvé un tombstone pendant le parcours, on l'utilise
+        if let Some(pos) = first_deleted {
+            self.table[pos] = Slot::Occupied(key, scheme);
+            return;
         }
 
         panic!("Table pleine ! Augmentez la taille.");
@@ -75,8 +101,12 @@ impl SchemeTable {
 
         for _ in 0..self.size {
             match &self.table[index] {
-                None => return None, // Case vide : pas trouvé
-                Some((existing_key, scheme)) => {
+                Slot::Empty => return None, // Case vide : pas trouvé
+                Slot::Deleted => {
+                    // Tombstone : la clé a pu être placée plus loin, on continue
+                    index = (index + step) % self.size;
+                }
+                Slot::Occupied(existing_key, scheme) => {
                     if existing_key == key {
                         return Some(scheme); // Trouvé !
                     }
@@ -98,9 +128,14 @@ impl SchemeTable {
     pub fn display(&self) {
         println!("=== Schèmes Morphologiques ===");
         let mut count = 0;
-        for (i, entry) in self.table.iter().enumerate() {
-            if let Some((key, scheme)) = entry {
-                println!("[{}] {} → {} ({})", i, key, scheme.nom, scheme.description);
+        for (i, slot) in self.table.iter().enumerate() {
+            if let Slot::Occupied(key, scheme) = slot {
+                let key_display: String = key.chars().rev().collect();
+                let nom_display: String = scheme.nom.chars().rev().collect();
+                println!(
+                    "[{}] {} → {} ({})",
+                    i, key_display, nom_display, scheme.description
+                );
                 count += 1;
             }
         }
@@ -108,6 +143,7 @@ impl SchemeTable {
     }
 
     // Supprimer un schème par sa clé - O(1)
+    // Utilise un marqueur tombstone (Deleted) pour ne pas casser les chaînes de probing
     // Retourne true si le schème a été trouvé et supprimé, false sinon
     pub fn delete(&mut self, key: &str) -> bool {
         let mut index = self.hash1(key);
@@ -116,12 +152,17 @@ impl SchemeTable {
         // Parcourir la table pour trouver la clé
         for _ in 0..self.size {
             match &self.table[index] {
-                None => return false, // case vide → la clé n'existe pas
-                Some((existing_key, _)) => {
+                Slot::Empty => return false, // case vide → la clé n'existe pas
+                Slot::Deleted => {
+                    // Tombstone : continuer la recherche
+                    index = (index + step) % self.size;
+                }
+                Slot::Occupied(existing_key, _) => {
                     if existing_key == key {
-                        // Trouvé ! On met la case à None
-                        self.table[index] = None;
-                        println!("Schème '{}' supprimé.", key);
+                        // Trouvé ! On marque la case comme Deleted (tombstone)
+                        // au lieu de Empty, pour ne pas casser les chaînes
+                        self.table[index] = Slot::Deleted;
+                        // Note: le println est désormais géré dans main.rs
                         return true;
                     }
                     // Pas la bonne clé, continuer avec le double hashing
@@ -136,8 +177,8 @@ impl SchemeTable {
     pub fn get_all_schemes(&self) -> Vec<&Scheme> {
         self.table
             .iter()
-            .filter_map(|entry| {
-                if let Some((_, scheme)) = entry {
+            .filter_map(|slot| {
+                if let Slot::Occupied(_, scheme) = slot {
                     Some(scheme)
                 } else {
                     None
