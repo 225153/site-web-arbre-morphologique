@@ -128,7 +128,18 @@ fn main() {
             // === 5. Prévisualiser famille morphologique ===
             "5" => {
                 if let Some(racine) = lire_racine_terminal() {
-                    afficher_famille(racine, &table_schemes);
+                    if !arbre.verify(racine) {
+                        let r: String = racine.iter().collect();
+                        println!(
+                            "✗ La racine '{}' n'existe pas dans l'arbre.",
+                            afficher_arabe(&r)
+                        );
+                        println!(
+                            "   Veuillez d'abord l'ajouter (option 2) ou charger des racines (option 1)."
+                        );
+                    } else {
+                        afficher_famille(racine, &table_schemes);
+                    }
                 }
             }
 
@@ -139,33 +150,35 @@ fn main() {
                     if !arbre.verify(racine) {
                         let r: String = racine.iter().collect();
                         println!(
-                            "Racine '{}' non trouvée. Ajout automatique...",
+                            "✗ La racine '{}' n'existe pas dans l'arbre.",
                             afficher_arabe(&r)
                         );
-                        arbre.insert(racine);
-                    }
-
-                    println!("Entrez le nom du schème (ex: فاعل) :");
-                    let nom_scheme = lire_texte_arabe();
-
-                    // Vérifier que le schème existe
-                    if !table_schemes.contains(&nom_scheme) {
-                        println!("✗ Schème '{}' non trouvé.", afficher_arabe(&nom_scheme));
+                        println!(
+                            "   Veuillez d'abord l'ajouter (option 2) ou charger des racines (option 1)."
+                        );
                     } else {
-                        // Générer le mot
-                        let mot = generer_mot(racine, &nom_scheme);
+                        println!("Entrez le nom du schème (ex: فاعل) :");
+                        let nom_scheme = lire_texte_arabe();
 
-                        // Stocker dans l'arbre
-                        let ok = arbre.ajouter_derive(racine, mot.clone(), nom_scheme.clone());
-
-                        if ok {
-                            println!(
-                                "✓ Dérivé '{}' généré et stocké (schème: {})",
-                                afficher_arabe(&mot),
-                                afficher_arabe(&nom_scheme)
-                            );
+                        // Vérifier que le schème existe
+                        if !table_schemes.contains(&nom_scheme) {
+                            println!("✗ Schème '{}' non trouvé.", afficher_arabe(&nom_scheme));
                         } else {
-                            println!("✗ Erreur lors du stockage du dérivé.");
+                            // Générer le mot
+                            let mot = generer_mot(racine, &nom_scheme);
+
+                            // Stocker dans l'arbre
+                            let ok = arbre.ajouter_derive(racine, mot.clone(), nom_scheme.clone());
+
+                            if ok {
+                                println!(
+                                    "✓ Dérivé '{}' généré et stocké (schème: {})",
+                                    afficher_arabe(&mot),
+                                    afficher_arabe(&nom_scheme)
+                                );
+                            } else {
+                                println!("✗ Erreur lors du stockage du dérivé.");
+                            }
                         }
                     }
                 }
@@ -178,14 +191,17 @@ fn main() {
                     if !arbre.verify(racine) {
                         let r: String = racine.iter().collect();
                         println!(
-                            "Racine '{}' non trouvée. Ajout automatique...",
+                            "✗ La racine '{}' n'existe pas dans l'arbre.",
                             afficher_arabe(&r)
                         );
-                        arbre.insert(racine);
+                        println!(
+                            "   Veuillez d'abord l'ajouter (option 2) ou charger des racines (option 1)."
+                        );
+                    } else {
+                        generer_et_stocker(&mut arbre, racine, &table_schemes);
+                        // Afficher les dérivés stockés
+                        afficher_derives_stockes(&mut arbre, racine);
                     }
-                    generer_et_stocker(&mut arbre, racine, &table_schemes);
-                    // Afficher les dérivés stockés
-                    afficher_derives_stockes(&mut arbre, racine);
                 }
             }
 
@@ -199,27 +215,30 @@ fn main() {
                     if !arbre.verify(racine) {
                         let r: String = racine.iter().collect();
                         println!(
-                            "Racine '{}' non trouvée. Ajout automatique...",
+                            "✗ La racine '{}' n'existe pas dans l'arbre.",
                             afficher_arabe(&r)
                         );
-                        arbre.insert(racine);
-                    }
-                    let (trouve, scheme) =
-                        valider_et_stocker(&mut arbre, &mot, racine, &table_schemes);
-                    let r: String = racine.iter().collect();
-                    if trouve {
                         println!(
-                            "✓ OUI : '{}' appartient à la racine '{}'",
-                            afficher_arabe(&mot),
-                            afficher_arabe(&r)
+                            "   Veuillez d'abord l'ajouter (option 2) ou charger des racines (option 1)."
                         );
-                        println!("  Schème : {}", afficher_arabe(&scheme.unwrap()));
                     } else {
-                        println!(
-                            "✗ NON : '{}' n'appartient pas à la racine '{}'",
-                            afficher_arabe(&mot),
-                            afficher_arabe(&r)
-                        );
+                        let (trouve, scheme) =
+                            valider_et_stocker(&mut arbre, &mot, racine, &table_schemes);
+                        let r: String = racine.iter().collect();
+                        if trouve {
+                            println!(
+                                "✓ OUI : '{}' appartient à la racine '{}'",
+                                afficher_arabe(&mot),
+                                afficher_arabe(&r)
+                            );
+                            println!("  Schème : {}", afficher_arabe(&scheme.unwrap()));
+                        } else {
+                            println!(
+                                "✗ NON : '{}' n'appartient pas à la racine '{}'",
+                                afficher_arabe(&mot),
+                                afficher_arabe(&r)
+                            );
+                        }
                     }
                 }
             }
