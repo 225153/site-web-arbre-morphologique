@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Derive {
     pub mot: String,
     pub schema: String,
@@ -75,12 +76,9 @@ impl RacineNode {
     // Afficher tous les dérivés de cette racine
     pub fn afficher_derives(&self) {
         let r: String = self.racine.iter().collect();
-        let r_display: String = r.chars().rev().collect();
-        println!("Racine: {} ({} dérivés)", r_display, self.frequence);
+        println!("Racine: {} ({} dérivés)", r, self.frequence);
         for d in &self.derives {
-            let mot_display: String = d.mot.chars().rev().collect();
-            let schema_display: String = d.schema.chars().rev().collect();
-            println!("  - {} (schème: {})", mot_display, schema_display);
+            println!("  - {} (schème: {})", d.mot, d.schema);
         }
     }
 
@@ -94,16 +92,29 @@ impl RacineNode {
 
         // 2) Ensuite, afficher le nœud courant
         let r: String = self.racine.iter().collect();
-        let r_display: String = r.chars().rev().collect();
         if self.frequence > 0 {
-            println!("  {} ({} dérivés)", r_display, self.frequence);
+            println!("  {} ({} dérivés)", r, self.frequence);
         } else {
-            println!("  {}", r_display);
+            println!("  {}", r);
         }
 
         // 3) Enfin, afficher tout le sous-arbre droit
         if let Some(droite) = &self.right {
             droite.afficher_in_order();
+        }
+    }
+
+    // Collecter toutes les racines dans un vecteur (pour l'API WebAssembly)
+    pub fn collecter_racines_node(&self, resultat: &mut Vec<([char; 3], u32, Vec<Derive>)>) {
+        // Parcours in-order : gauche → nœud → droite
+        if let Some(gauche) = &self.left {
+            gauche.collecter_racines_node(resultat);
+        }
+
+        resultat.push((self.racine, self.frequence, self.derives.clone()));
+
+        if let Some(droite) = &self.right {
+            droite.collecter_racines_node(resultat);
         }
     }
 
@@ -291,8 +302,7 @@ impl Tree {
                 self.insert(racine); // insérer dans l'arbre (les doublons sont ignorés)
                 compteur = compteur + 1;
             } else {
-                let ligne_display: String = ligne.chars().rev().collect();
-                println!("Ligne ignorée (pas 3 caractères): '{}'", ligne_display);
+                println!("Ligne ignorée (pas 3 caractères): '{}'", ligne);
             }
         }
 
@@ -308,5 +318,12 @@ impl Tree {
         }
         println!("=== Racines stockées (ordre trié) ===");
         self.racine.as_ref().unwrap().afficher_in_order();
+    }
+
+    // Collecter toutes les racines de l'arbre (pour l'API WebAssembly)
+    pub fn collecter_racines(&self, resultat: &mut Vec<([char; 3], u32, Vec<Derive>)>) {
+        if let Some(ref root) = self.racine {
+            root.collecter_racines_node(resultat);
+        }
     }
 }

@@ -131,12 +131,7 @@ impl SchemeTable {
         let mut count = 0;
         for (i, slot) in self.table.iter().enumerate() {
             if let Slot::Occupied(key, scheme) = slot {
-                let key_display: String = key.chars().rev().collect();
-                let nom_display: String = scheme.nom.chars().rev().collect();
-                println!(
-                    "[{}] {} → {} ({})",
-                    i, key_display, nom_display, scheme.description
-                );
+                println!("[{}] {} → {} ({})", i, key, scheme.nom, scheme.description);
                 count += 1;
             }
         }

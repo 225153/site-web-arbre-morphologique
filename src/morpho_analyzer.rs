@@ -48,15 +48,12 @@ pub fn generer_famille(racine: [char; 3], table: &SchemeTable) -> Vec<(String, S
 // Afficher toute la famille morphologique d'une racine
 pub fn afficher_famille(racine: [char; 3], table: &SchemeTable) {
     let r: String = racine.iter().collect();
-    let r_display: String = r.chars().rev().collect();
-    println!("=== Famille morphologique de {} ===", r_display);
+    println!("=== Famille morphologique de {} ===", r);
 
     let famille = generer_famille(racine, table);
 
     for (scheme, mot) in &famille {
-        let scheme_display: String = scheme.chars().rev().collect();
-        let mot_display: String = mot.chars().rev().collect();
-        println!("  {} → {}", scheme_display, mot_display);
+        println!("  {} → {}", scheme, mot);
     }
 
     println!("Total: {} dérivés", famille.len());
@@ -129,10 +126,9 @@ pub fn generer_et_stocker(arbre: &mut Tree, racine: [char; 3], table: &SchemeTab
     }
 
     let r: String = racine.iter().collect();
-    let r_display: String = r.chars().rev().collect();
     println!(
         "{} dérivés générés et stockés pour la racine '{}'",
-        compteur, r_display
+        compteur, r
     );
     compteur
 }
@@ -163,8 +159,7 @@ pub fn afficher_derives_stockes(arbre: &mut Tree, racine: [char; 3]) {
         Some(n) => n.afficher_derives(),
         None => {
             let r: String = racine.iter().collect();
-            let r_display: String = r.chars().rev().collect();
-            println!("Racine '{}' non trouvée dans l'arbre.", r_display);
+            println!("Racine '{}' non trouvée dans l'arbre.", r);
         }
     }
 }
