@@ -1,0 +1,15 @@
+{
+  "name": "moteur_morphologique",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "moteur_morphologique_bg.wasm",
+    "moteur_morphologique.js",
+    "moteur_morphologique.d.ts"
+  ],
+  "main": "moteur_morphologique.js",
+  "types": "moteur_morphologique.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
