@@ -1,0 +1,17 @@
+/* Global styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f5f6fa;
+  font-family: 'Amiri', 'Segoe UI', Tahoma, sans-serif;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+html {
+  scroll-behavior: smooth;
+}

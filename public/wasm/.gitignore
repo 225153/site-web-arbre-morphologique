@@ -1,0 +1,6 @@
+# Ne pas ignorer les fichiers WASM compilés
+# Ils sont nécessaires pour le déploiement sur Netlify
+!*.wasm
+!*.js
+!*.d.ts
+!package.json

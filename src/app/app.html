@@ -1,0 +1,298 @@
+<div class="app-container" dir="rtl">
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>جاري تهيئة المحلل الصرفي...</p>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- Header -->
+    <header class="header">
+      <h1>🌳 المحلل الصرفي العربي</h1>
+      <p class="subtitle">محرك تحليل الصرف العربي — بنية شجرة ثنائية + جدول تجزئة</p>
+      <div class="stats">
+        <span class="stat">🌿 الجذور: {{ totalRacines() }}</span>
+        <span class="stat">⚖️ الأوزان: {{ totalSchemes() }}</span>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    @if (message()) {
+      <div class="alert alert-success">{{ message() }}</div>
+    }
+    @if (erreur()) {
+      <div class="alert alert-error">{{ erreur() }}</div>
+    }
+
+    <!-- Navigation -->
+    <nav class="tab-nav">
+      <button [class.active]="activeTab() === 'racines'" (click)="setTab('racines')">
+        🌱 الجذور
+      </button>
+      <button [class.active]="activeTab() === 'derives'" (click)="setTab('derives')">
+        📝 المشتقات
+      </button>
+      <button [class.active]="activeTab() === 'validation'" (click)="setTab('validation')">
+        ✅ التحقق
+      </button>
+      <button [class.active]="activeTab() === 'schemes'" (click)="setTab('schemes')">
+        ⚖️ الأوزان
+      </button>
+      <button [class.active]="activeTab() === 'arbre'" (click)="setTab('arbre')">
+        🌳 الشجرة
+      </button>
+    </nav>
+
+    <!-- TAB: RACINES -->
+    @if (activeTab() === 'racines') {
+      <section class="tab-content">
+        <h2>إدارة الجذور</h2>
+
+        <div class="input-group">
+          <label>الجذر (3 أحرف عربية):</label>
+          <input
+            type="text"
+            [value]="racineInput()"
+            (input)="racineInput.set($any($event.target).value)"
+            placeholder="مثال: كتب"
+            maxlength="10"
+            class="arabic-input"
+          />
+          <div class="btn-row">
+            <button class="btn btn-primary" (click)="ajouterRacine()">➕ إضافة</button>
+            <button class="btn btn-info" (click)="chercherRacine()">🔍 بحث</button>
+            <button class="btn btn-danger" (click)="supprimerRacine()">🗑️ حذف</button>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label>تحميل جذور من نص:</label>
+          <textarea
+            [value]="racinesTexte()"
+            (input)="racinesTexte.set($any($event.target).value)"
+            placeholder="أدخل نصاً يحتوي على جذور (جذر واحد في كل سطر أو مفصولة بمسافة)"
+            rows="4"
+            class="arabic-input"
+          ></textarea>
+          <button class="btn btn-primary" (click)="chargerRacines()">📥 تحميل الجذور</button>
+        </div>
+      </section>
+    }
+
+    <!-- TAB: DÉRIVÉS -->
+    @if (activeTab() === 'derives') {
+      <section class="tab-content">
+        <h2>توليد المشتقات</h2>
+
+        <div class="input-group">
+          <label>الجذر:</label>
+          <input
+            type="text"
+            [value]="deriveRacine()"
+            (input)="deriveRacine.set($any($event.target).value)"
+            placeholder="مثال: كتب"
+            maxlength="10"
+            class="arabic-input"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>الوزن (اختياري للتوليد الفردي):</label>
+          <input
+            type="text"
+            [value]="deriveSchema()"
+            (input)="deriveSchema.set($any($event.target).value)"
+            placeholder="مثال: فَعَلَ"
+            class="arabic-input"
+          />
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" (click)="genererTousDerives()">📋 توليد الكل (عرض فقط)</button>
+          <button class="btn btn-success" (click)="genererEtStockerTous()">💾 توليد + تخزين الكل</button>
+          <button class="btn btn-info" (click)="genererDerive()">📝 توليد فردي</button>
+          <button class="btn btn-success" (click)="genererEtStockerDerive()">💾 توليد + تخزين فردي</button>
+        </div>
+
+        <!-- Dérivés générés -->
+        @if (derivesGeneres().length > 0) {
+          <div class="results-box">
+            <h3>المشتقات المولدة ({{ derivesGeneres().length }})</h3>
+            <table class="data-table">
+              <thead>
+                <tr><th>المشتق</th><th>الوزن</th></tr>
+              </thead>
+              <tbody>
+                @for (d of derivesGeneres(); track d.mot) {
+                  <tr><td class="arabic-cell">{{ d.mot }}</td><td class="arabic-cell">{{ d.schema }}</td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- Dérivés stockés -->
+        <div class="results-box">
+          <h3>المشتقات المخزنة</h3>
+          <button class="btn btn-info btn-sm" (click)="afficherDerivesStockes()">🔄 تحديث</button>
+          @if (derivesStockes().length > 0) {
+            <table class="data-table">
+              <thead>
+                <tr><th>المشتق</th><th>الوزن</th><th>إجراء</th></tr>
+              </thead>
+              <tbody>
+                @for (d of derivesStockes(); track d.mot) {
+                  <tr>
+                    <td class="arabic-cell">{{ d.mot }}</td>
+                    <td class="arabic-cell">{{ d.schema }}</td>
+                    <td><button class="btn btn-danger btn-sm" (click)="supprimerDerive(d.mot)">🗑️</button></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <p class="empty">لا توجد مشتقات مخزنة</p>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- TAB: VALIDATION -->
+    @if (activeTab() === 'validation') {
+      <section class="tab-content">
+        <h2>التحقق من كلمة مشتقة</h2>
+
+        <div class="input-group">
+          <label>الجذر:</label>
+          <input
+            type="text"
+            [value]="validationRacine()"
+            (input)="validationRacine.set($any($event.target).value)"
+            placeholder="مثال: كتب"
+            maxlength="10"
+            class="arabic-input"
+          />
+        </div>
+
+        <div class="input-group">
+          <label>الكلمة المشتقة:</label>
+          <input
+            type="text"
+            [value]="validationMot()"
+            (input)="validationMot.set($any($event.target).value)"
+            placeholder="مثال: كاتب"
+            class="arabic-input"
+          />
+        </div>
+
+        <button class="btn btn-primary" (click)="validerMot()">✅ تحقق</button>
+
+        @if (validationResultat()) {
+          <div class="validation-result" [class.valid]="validationResultat()!.valide" [class.invalid]="!validationResultat()!.valide">
+            @if (validationResultat()!.valide) {
+              <span>✓ صحيحة — الوزن: {{ validationResultat()!.schema }}</span>
+            } @else {
+              <span>✗ غير مطابقة لأي وزن من أوزان هذا الجذر</span>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <!-- TAB: SCHEMES -->
+    @if (activeTab() === 'schemes') {
+      <section class="tab-content">
+        <h2>إدارة الأوزان الصرفية</h2>
+
+        <div class="input-group">
+          <label>اسم الوزن:</label>
+          <input
+            type="text"
+            [value]="nouveauSchemeNom()"
+            (input)="nouveauSchemeNom.set($any($event.target).value)"
+            placeholder="مثال: فَعّال"
+            class="arabic-input"
+          />
+        </div>
+        <div class="input-group">
+          <label>نمط الوزن:</label>
+          <input
+            type="text"
+            [value]="nouveauSchemePattern()"
+            (input)="nouveauSchemePattern.set($any($event.target).value)"
+            placeholder="مثال: 1َ2ّ3"
+            class="arabic-input"
+          />
+        </div>
+        <div class="input-group">
+          <label>وصف (اختياري):</label>
+          <input
+            type="text"
+            [value]="nouveauSchemeDesc()"
+            (input)="nouveauSchemeDesc.set($any($event.target).value)"
+            placeholder="وصف الوزن"
+            class="arabic-input"
+          />
+        </div>
+        <button class="btn btn-primary" (click)="ajouterScheme()">➕ إضافة وزن</button>
+
+        <div class="results-box">
+          <h3>الأوزان المتاحة ({{ schemesList().length }})</h3>
+          <table class="data-table">
+            <thead>
+              <tr><th>الاسم</th><th>النمط</th><th>الوصف</th><th>إجراء</th></tr>
+            </thead>
+            <tbody>
+              @for (s of schemesList(); track s.nom) {
+                <tr>
+                  <td class="arabic-cell">{{ s.nom }}</td>
+                  <td class="arabic-cell">{{ s.modele }}</td>
+                  <td>{{ s.id }}</td>
+                  <td><button class="btn btn-danger btn-sm" (click)="supprimerScheme(s.nom)">🗑️</button></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    <!-- TAB: ARBRE -->
+    @if (activeTab() === 'arbre') {
+      <section class="tab-content">
+        <h2>🌳 عرض الشجرة</h2>
+        <button class="btn btn-info" (click)="rafraichirArbre()">🔄 تحديث</button>
+
+        @if (racinesList().length > 0) {
+          <table class="data-table">
+            <thead>
+              <tr><th>الجذر</th><th>عدد المشتقات</th><th>المشتقات</th></tr>
+            </thead>
+            <tbody>
+              @for (r of racinesList(); track r.racine) {
+                <tr>
+                  <td class="arabic-cell racine-cell">{{ r.racine }}</td>
+                  <td>{{ r.nombre_derives }}</td>
+                  <td class="arabic-cell">
+                    @if (r.derives && r.derives.length > 0) {
+                      @for (d of r.derives; track d.mot) {
+                        <span class="derive-tag">{{ d.mot }} <small>({{ d.schema }})</small></span>
+                      }
+                    } @else {
+                      <span class="empty">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        } @else {
+          <p class="empty">الشجرة فارغة — أضف جذوراً أولاً</p>
+        }
+      </section>
+    }
+  }
+</div>
